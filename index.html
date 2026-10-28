@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instagram Chat</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: #dfe3e8; color: #1b1b1b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px 60px;
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+
+  /* ============ CONTROL PANEL ============ */
+  .panel {
+    background: #fff; border-radius: 14px; padding: 18px 16px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08); margin-bottom: 20px;
+  }
+  .panel h2 { margin: 0 0 16px; font-size: 16px; font-weight: 700; text-align: center; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    color: #6b7280; font-weight: 600;
+  }
+  .field input, .field select {
+    width: 100%; padding: 10px 11px; border: 1px solid #d3d7dd; border-radius: 9px;
+    font-size: 14px; font-family: inherit; color: #111; background: #fbfcfd;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: #7b2ff7; background: #fff;
+    box-shadow: 0 0 0 3px rgba(123,47,247,.12);
+  }
+  .seg { display: flex; gap: 8px; }
+  .seg button {
+    flex: 1; padding: 10px; border: 1px solid #d3d7dd; background: #fbfcfd;
+    border-radius: 9px; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: #444;
+  }
+  .seg button.on { background: #7b2ff7; border-color: #7b2ff7; color: #fff; }
+  .btn {
+    width: 100%; margin-top: 14px; padding: 13px; border: 0; border-radius: 10px;
+    background: #7b2ff7; color: #fff; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  .btn.ghost { background: #eef1f5; color: #333; margin-top: 8px; }
+  .btn.small { padding: 10px; font-size: 13px; }
+  .hint { font-size: 11.5px; color: #7a828d; margin: 10px 0 0; line-height: 1.45; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    --bg: #fff;
+    --text: #1b1b1b;
+    --sub: #737373;
+    --line: #e6e6e6;
+    --bar: #fff;
+    --field: #f0f0f0;
+    --bubble-out: #7b2ff7;
+    --bubble-in: #efefef;
+    --bubble-in-text: #1b1b1b;
+    --divider: #dbdbdb;
+    background: var(--bg); color: var(--text);
+    border-radius: 26px; overflow: hidden;
+    box-shadow: 0 6px 22px rgba(0,0,0,.18);
+    display: flex; flex-direction: column;
+    height: 760px;
+  }
+  .phone.dark {
+    --bg: #000;
+    --text: #f5f5f5;
+    --sub: #a8a8a8;
+    --line: #262626;
+    --bar: #000;
+    --field: #1c1c1e;
+    --bubble-out: #7b2ff7;
+    --bubble-in: #262626;
+    --bubble-in-text: #f5f5f5;
+    --divider: #262626;
+  }
+
+  /* status bar */
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 22px 6px; font-size: 14px; font-weight: 600;
+    background: var(--bar); color: var(--text); flex: 0 0 auto;
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+  .battery { display: flex; align-items: center; gap: 3px; }
+  .battery .shell {
+    width: 22px; height: 11px; border: 1.4px solid currentColor; border-radius: 3px;
+    padding: 1.4px; position: relative;
+  }
+  .battery .shell::after {
+    content: ""; position: absolute; right: -3.6px; top: 3px;
+    width: 2px; height: 4px; background: currentColor; border-radius: 0 1px 1px 0;
+  }
+  .battery .fill { width: 100%; height: 100%; background: #ff3b30; border-radius: 1.4px; }
+
+  /* header */
+  .chathead {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px 12px; border-bottom: 1px solid var(--line);
+    background: var(--bar); flex: 0 0 auto;
+  }
+  .back { font-size: 26px; line-height: 1; color: var(--text); font-weight: 300; width: 18px; }
+  .avatarsm { position: relative; width: 42px; height: 42px; flex: 0 0 auto; }
+  .avatarsm img, .avatarsm .fallback {
+    width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: block;
+    background: var(--field);
+  }
+  .avatarsm .fallback {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: var(--sub);
+  }
+  .avatarsm .chip {
+    position: absolute; right: -1px; bottom: -1px; width: 14px; height: 14px;
+    border-radius: 50%; background: #31d158; border: 2.4px solid var(--bar);
+  }
+  .avatarsm .chip.off { background: #9e9e9e; display: none; }
+  .headtxt { flex: 1; min-width: 0; }
+  .headname {
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .headname .chev { font-size: 16px; color: var(--sub); font-weight: 400; }
+  .headsub { font-size: 12.5px; color: var(--sub); margin-top: 1px; }
+  .headicons { display: flex; align-items: center; gap: 16px; }
+  .headicons svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* profile card */
+  .profile {
+    text-align: center; padding: 26px 22px 22px;
+    border-bottom: 1px solid var(--line); flex: 0 0 auto;
+  }
+  .profile .pn { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+  .profile .pu { font-size: 16px; color: var(--sub); margin: 0 0 4px; }
+  .profile .pm { font-size: 16px; color: var(--sub); margin: 0 0 4px; }
+  .profile .pf { font-size: 17px; color: var(--sub); margin: 0 0 2px; }
+  .profile .pa { font-size: 17px; color: var(--sub); margin: 0 0 18px; }
+  .view-btn {
+    background: var(--field); border: 0; border-radius: 9px; padding: 11px 26px;
+    font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer;
+  }
+
+  /* thread */
+  .thread {
+    flex: 1 1 auto; overflow-y: auto; padding: 18px 14px 10px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .thread::-webkit-scrollbar { width: 0; }
+  .stamp { align-self: center; font-size: 12.5px; color: var(--sub); margin: 8px 0 6px; }
+  .row { display: flex; align-items: flex-end; gap: 8px; }
+  .row.out { justify-content: flex-end; }
+  .row.in  { justify-content: flex-start; }
+  .bubble {
+    max-width: 76%; padding: 12px 16px; border-radius: 22px;
+    font-size: 16.5px; line-height: 1.35; word-break: break-word;
+  }
+  .row.out .bubble { background: var(--bubble-out); color: #fff; border-bottom-right-radius: 22px; }
+  .row.in  .bubble { background: var(--bubble-in); color: var(--bubble-in-text); }
+  .row .avatarxs {
+    width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto; object-fit: cover;
+    background: var(--field); overflow: hidden;
+  }
+  .row .avatarxs .fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--sub);
+  }
+  .tapreact { font-size: 12.5px; color: var(--sub); margin: 2px 0 0 40px; }
+
+  /* transfer card */
+  .transfer {
+    align-self: flex-end; width: 72%; border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--divider); background: var(--bg); color: var(--text);
+  }
+  .transfer .top { padding: 10px 14px; font-size: 11.5px; color: var(--sub); border-bottom: 1px solid var(--divider); }
+  .tgroup { padding: 12px 14px; border-bottom: 1px solid var(--divider); }
+  .tgroup:last-child { border-bottom: 0; }
+  .tgroup h5 { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; }
+  .tacct { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tacct .logo {
+    width: 22px; height: 22px; border-radius: 5px; display: flex;
+    align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff;
+  }
+  .logo.naranja { background: #f36f21; }
+  .logo.personal { background: #1f6fe0; }
+  .tacct .who { font-size: 12px; line-height: 1.25; }
+  .tacct .who b { display: block; font-weight: 700; }
+  .tacct .who span { color: var(--sub); font-size: 11px; }
+  .tfield { font-size: 11px; color: var(--sub); margin: 0 0 2px; }
+  .tvalue { font-size: 12px; margin: 0 0 8px; }
+  .tvalue:last-child { margin-bottom: 0; }
+
+  /* reaction pills column */
+  .pills { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 6px 0 2px; }
+  .pill {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.6px solid var(--divider); background: var(--bg);
+  }
+  .pill svg { width: 19px; height: 19px; stroke: var(--text); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* composer */
+  .composer {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px 10px; border-top: 1px solid var(--line); background: var(--bar);
+  }
+  .cam {
+    width: 36px; height: 36px; border-radius: 50%; background: #4a5df9; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cam svg { width: 19px; height: 19px; stroke: #fff; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+  .inputwrap {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    background: var(--field); border-radius: 20px; padding: 9px 14px;
+  }
+  .inputwrap input {
+    flex: 1; border: 0; background: transparent; outline: none;
+    font-family: inherit; font-size: 15.5px; color: var(--text); min-width: 0;
+  }
+  .inputwrap input::placeholder { color: var(--sub); }
+  .inputwrap svg { width: 22px; height: 22px; stroke: var(--text); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  .send {
+    width: 34px; height: 34px; border-radius: 50%; background: #7b2ff7; border: 0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto;
+    display: none;
+  }
+  .send.show { display: flex; }
+  .send svg { width: 17px; height: 17px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .icons-right { display: flex; align-items: center; gap: 14px; }
+  .homebar { height: 20px; display: flex; align-items: center; justify-content: center; background: var(--bar); flex: 0 0 auto; }
+  .homebar i { width: 118px; height: 5px; border-radius: 3px; background: var(--text); display: block; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============== CONTROL PANEL ============== -->
+  <div class="panel">
+    <h2>Chat setup</h2>
+
+    <div class="grid">
+      <div class="field full">
+        <label for="rname">Receiver profile name</label>
+        <input id="rname" value="Ramirez Biaan">
+      </div>
+      <div class="field full">
+        <label for="rpic">Receiver profile picture URL</label>
+        <input id="rpic" placeholder="https://...">
+      </div>
+      <div class="field">
+        <label for="rstatus">Activity status</label>
+        <select id="rstatus">
+          <option value="active">Active now</option>
+          <option value="ai">AI-generated profile</option>
+          <option value="off">Offline</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="myinit">Your initials</label>
+        <input id="myinit" value="C" maxlength="2">
+      </div>
+
+      <div class="field full">
+        <label for="username">Username</label>
+        <input id="username" value="trust.ramirezbiaan">
+      </div>
+      <div class="field full">
+        <label for="pmeta">Followers · posts</label>
+        <input id="pmeta" value="5 followers · 5 posts">
+      </div>
+      <div class="field full">
+        <label for="pfollow">Following line</label>
+        <input id="pfollow" value="You follow each other on Instagram">
+      </div>
+      <div class="field full">
+        <label for="pnew">Account line</label>
+        <input id="pnew" value="New Instagram account">
+      </div>
+    </div>
+
+    <p class="hint">Switch mode, then send messages as either person from inside the chat using the toggle under the composer.</p>
+
+    <div class="seg" style="margin-top:12px;">
+      <button type="button" id="mLite" class="on">Light mode</button>
+      <button type="button" id="mDark">Dark mode</button>
+    </div>
+
+    <button type="button" class="btn" id="previewBtn">Ver vista previa</button>
+    <button type="button" class="btn ghost small" id="resetBtn">Reset to screenshot</button>
+  </div>
+
+  <!-- ============== PHONE ============== -->
+  <div class="phone" id="phone">
+
+    <div class="statusbar">
+      <span id="clock">6:21</span>
+      <span class="right">
+        <svg width="16" height="13" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+          <path d="M2 18v-4M7 18v-8M12 18V6M17 18V3"/>
+        </svg>
+        <span id="net">LTE</span>
+        <span class="battery">
+          <span class="shell"><span class="fill"></span></span>
+        </span>
+      </span>
+    </div>
+
+    <div class="chathead">
+      <span class="back">&#8249;</span>
+      <span class="avatarsm">
+        <img id="headPic" class="hidden" alt="">
+        <span class="fallback" id="headInit">R</span>
+        <span class="chip" id="headChip"></span>
+      </span>
+      <span class="headtxt">
+        <span class="headname"><span id="headName">Ramirez Biaan</span> <span class="chev">&#8250;</span></span>
+        <span class="headsub" id="headSub">AI-generated profile</span>
+      </span>
+      <span class="headicons">
+        <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M15 10.5l6-3.5v10l-6-3.5z"/></svg>
+      </span>
+    </div>
+
+    <!-- profile card -->
+    <div class="profile" id="profileCard">
+      <p class="pn" id="pName">Ramirez Biaan</p>
+      <p class="pu" id="pUser">trust.ramirezbiaan</p>
+      <p class="pm" id="pMeta">5 followers · 5 posts</p>
+      <p class="pf" id="pFollow">You follow each other on Instagram</p>
+      <p class="pa" id="pNew">New Instagram account</p>
+      <button type="button" class="view-btn" id="viewBtn">View profile</button>
+    </div>
+
+    <!-- thread -->
+    <div class="thread" id="thread">
+      <div class="stamp">11:57 AM</div>
+
+      <div class="row out">
+        <div class="bubble">0000168300000001496844</div>
+      </div>
+      <div class="row out">
+        <div class="bubble">Ariel Bravi</div>
+      </div>
+
+      <div class="transfer">
+        <div class="top">27/OCT/2026 - 06:58 h</div>
+
+        <div class="tgroup">
+          <h5>Cuenta origen</h5>
+          <div class="tacct">
+            <span class="logo naranja">NX</span>
+            <span class="who"><b>Carina Elizabeth Romero</b><span>Naranja X</span></span>
+          </div>
+          <p class="tfield">CBU</p>
+          <p class="tvalue">4530000800012272876586</p>
+          <p class="tfield">CUIL</p>
+          <p class="tvalue">27-26505459-0</p>
+        </div>
+
+        <div class="tgroup">
+          <h5>Cuenta destino</h5>
+          <div class="tacct">
+            <span class="logo personal">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>
+              </svg>
+            </span>
+            <span class="who"><b>Franco Emanuel Mattalia</b><span>Personal Pay</span></span>
+          </div>
+          <p class="tfield">CVU</p>
+          <p class="tvalue">0000076500000055937359</p>
+          <p class="tfield">CUIL</p>
+          <p class="tvalue">20-47669617-9</p>
+        </div>
+
+        <div class="tgroup">
+          <h5>Información de la operación</h5>
+          <p class="tfield">COELSA ID</p>
+        </div>
+      </div>
+
+      <div class="pills">
+        <span class="pill">
+          <svg viewBox="0 0 24 24"><path d="M21.5 3L10.5 13.5"/><path d="M21.5 3l-7 18-4-8-8-4z"/></svg>
+        </span>
+        <span class="pill">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8.2 7.6L20 18M8.2 16.4L20 6"/><path d="M18 3.5v3M16.5 5h3"/></svg>
+        </span>
+      </div>
+
+      <div class="stamp">6:20 PM</div>
+    </div>
+
+    <!-- composer -->
+    <div class="composer">
+      <span class="cam">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="14" rx="3"/><circle cx="12" cy="13" r="3.6"/><path d="M7.5 6l1.3-2.2h6.4L16.5 6"/></svg>
+      </span>
+      <span class="inputwrap">
+        <input id="msgInput" placeholder="Message..." autocomplete="off">
+        <svg viewBox="0 0 24 24" id="icoMic"><path d="M12 2.5a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0v-6a3 3 0 0 1 3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3.5"/></svg>
+        <svg viewBox="0 0 24 24" id="icoImg"><rect x="3" y="4" width="18" height="16" rx="2.6"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4.5 17l4.8-5 3.4 3.4 2.6-2.4 4.2 4"/></svg>
+        <svg viewBox="0 0 24 24" id="icoStick"><circle cx="12" cy="12" r="9.2"/><path d="M8.3 14.2a4.4 4.4 0 0 0 7.4 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>
+      </span>
+      <button type="button" class="send" id="sendBtn">
+        <svg viewBox="0 0 24 24"><path d="M21.5 3L10.5 13.5"/><path d="M21.5 3l-7 18-4-8-8-4z"/></svg>
+      </button>
+      <span class="cam" id="plusCam" style="background:#7b2ff7;">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+    </div>
+
+    <div class="homebar"><i></i></div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var phone = $('phone');
+  var thread = $('thread');
+  var input = $('msgInput');
+  var sendBtn = $('sendBtn');
+
+  /* ------- who am I sending as ------- */
+  var sender = 'out'; // 'out' = me, 'in' = receiver
+
+  /* ------- mode ------- */
+  $('mLite').addEventListener('click', function () {
+    phone.classList.remove('dark');
+    this.classList.add('on'); $('mDark').classList.remove('on');
+  });
+  $('mDark').addEventListener('click', function () {
+    phone.classList.add('dark');
+    this.classList.add('on'); $('mLite').classList.remove('on');
+  });
+
+  /* ------- receiver profile fields ------- */
+  function initials(name) {
+    var p = (name || '').trim().split(/\s+/);
+    return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase();
+  }
+
+  function paintProfile() {
+    var name = $('rname').value.trim() || 'Instagram user';
+    $('headName').textContent = name;
+    $('pName').textContent = name;
+    $('headInit').textContent = initials(name);
+
+    var url = $('rpic').value.trim();
+    var img = $('headPic');
+    if (url) { img.src = url; img.classList.remove('hidden'); $('headInit').classList.add('hidden'); }
+    else { img.removeAttribute('src'); img.classList.add('hidden'); $('headInit').classList.remove('hidden'); }
+
+    var st = $('rstatus').value;
+    var chip = $('headChip');
+    if (st === 'active') { chip.classList.remove('off'); $('headSub').textContent = 'Active now'; }
+    else if (st === 'ai') { chip.classList.add('off'); $('headSub').textContent = 'AI-generated profile'; }
+    else { chip.classList.add('off'); $('headSub').textContent = 'Offline'; }
+
+    $('pUser').textContent   = $('username').value.trim() || '@usuario';
+    $('pMeta').textContent   = $('pmeta').value.trim();
+    $('pFollow').textContent = $('pfollow').value.trim();
+    $('pNew').textContent    = $('pnew').value.trim();
+  }
+
+  ['rname','rpic','rstatus','username','pmeta','pfollow','pnew'].forEach(function (id) {
+    $(id).addEventListener('input', paintProfile);
+    $(id).addEventListener('change', paintProfile);
+  });
+
+  /* ------- avatar for incoming bubbles ------- */
+  function makeAvatar() {
+    var span = document.createElement('span');
+    span.className = 'avatarxs';
+    var url = $('rpic').value.trim();
+    if (url) {
+      var im = document.createElement('img');
+      im.src = url; im.style.width = '100%'; im.style.height = '100%';
+      im.style.objectFit = 'cover'; im.style.borderRadius = '50%';
+      span.appendChild(im);
+    } else {
+      var f = document.createElement('span');
+      f.className = 'fallback';
+      f.textContent = initials($('rname').value) || 'R';
+      span.appendChild(f);
+    }
+    return span;
+  }
+
+  /* ------- sending ------- */
+  function pushMessage(kind, payload) {
+    var row = document.createElement('div');
+    row.className = 'row ' + sender;
+
+    if (kind === 'image') {
+      if (sender === 'in') row.appendChild(makeAvatar());
+      var b = document.createElement('div');
+      b.className = 'bubble';
+      b.style.padding = '5px';
+      var im = document.createElement('img');
+      im.src = payload; im.style.display = 'block';
+      im.style.width = '100%'; im.style.maxWidth = '220px';
+      im.style.borderRadius = '18px';
+      b.appendChild(im);
+      row.appendChild(b);
+    } else {
+      if (sender === 'in') row.appendChild(makeAvatar());
+      var t = document.createElement('div');
+      t.className = 'bubble';
+      t.textContent = payload;
+      row.appendChild(t);
+    }
+
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function send() {
+    var text = input.value.trim();
+    if (!text) return;
+    pushMessage('text', text);
+    input.value = '';
+    sendBtn.classList.remove('show');
+    $('plusCam').style.display = 'flex';
+
+    // receiver answers after a beat
+    if (sender === 'out') {
+      setTimeout(function () {
+        var replies = ['Ok', 'Recibido, gracias', 'Perfecto 🙌', 'Dale, lo veo'];
+        var r = replies[Math.floor(Math.random() * replies.length)];
+        var keep = sender; sender = 'in';
+        pushMessage('text', r);
+        sender = keep;
+      }, 900);
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('input', function () {
+    var has = input.value.trim().length > 0;
+    sendBtn.classList.toggle('show', has);
+    $('plusCam').style.display = has ? 'none' : 'flex';
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); send(); }
+  });
+
+  /* ------- image picker ------- */
+  $('icoImg').style.cursor = 'pointer';
+  $('icoImg').addEventListener('click', function () {
+    var f = document.createElement('input');
+    f.type = 'file'; f.accept = 'image/*';
+    f.onchange = function () {
+      var file = f.files && f.files[0];
+      if (!file) return;
+      var rd = new FileReader();
+      rd.onload = function () { pushMessage('image', rd.result); };
+      rd.readAsDataURL(file);
+    };
+    f.click();
+  });
+
+  /* ------- sender switcher (double-click the header name) ------- */
+  $('headName').style.cursor = 'pointer';
+  $('headName').addEventListener('dblclick', function () {
+    sender = (sender === 'out') ? 'in' : 'out';
+    $('headSub').textContent = (sender === 'out')
+      ? 'Sending as you'
+      : 'Sending as ' + ($('rname').value.trim() || 'receiver');
+  });
+
+  /* ------- preview + reset ------- */
+  $('previewBtn').addEventListener('click', function () {
+    paintProfile();
+    phone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    input.focus();
+  });
+
+  $('resetBtn').addEventListener('click', function () {
+    $('rname').value = 'Ramirez Biaan';
+    $('rpic').value = '';
+    $('rstatus').value = 'ai';
+    $('myinit').value = 'C';
+    $('username').value = 'trust.ramirezbiaan';
+    $('pmeta').value = '5 followers · 5 posts';
+    $('pfollow').value = 'You follow each other on Instagram';
+    $('pnew').value = 'New Instagram account';
+    paintProfile();
+  });
+
+  /* ------- init ------- */
+  paintProfile();
+  thread.scrollTop = thread.scrollHeight;
+})();
+</script>
+</body>
+</html>
